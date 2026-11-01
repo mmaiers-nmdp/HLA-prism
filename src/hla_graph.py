@@ -23,18 +23,30 @@ from dataclasses import dataclass, field
 import numpy as np
 
 # ==========================================================================
+# PATHS (standard repo layout: data/ for inputs, results/ for outputs)
+# ==========================================================================
+# Resolve relative to the repo root (parent of this src/ directory) so the
+# script works regardless of the current working directory.
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.environ.get("HLA_DATA_DIR", os.path.join(ROOT_DIR, "data"))
+RESULTS_DIR = os.environ.get("HLA_RESULTS_DIR", os.path.join(ROOT_DIR, "results"))
+
+# ==========================================================================
 # SETTINGS
 # ==========================================================================
-TRAIN_FASTA = "training.fasta"      # alleles used to build the graph
-TEST_FASTA = "test.fasta"           # sequences placed on the graph ("" to skip)
-OUT_DIR = "hla_graph_output"        # all results go here
-K = 100                             # minimal polymorphism per block
+TRAIN_FASTA = os.path.join(DATA_DIR, "train.fa")        # alleles used to build the graph
+TEST_FASTA = os.path.join(DATA_DIR, "test.fa")          # sequences placed on the graph ("" to skip)
+OUT_DIR = RESULTS_DIR               # all results go here
+K = int(os.environ.get("HLA_K", "100"))  # minimal polymorphism per block (env: HLA_K)
 N_TEST = None                       # use only the first N test sequences (None = all)
 
 MAFFT = "mafft"                     # or full path, e.g. r"C:\tools\mafft-win\mafft.bat"
-MAFFT_ARGS = "--auto"
-BACKBONE_MIN_LEN = 330              # align sequences >= this length first, then add the rest
-                                    # (None = one MAFFT run on everything)
+MAFFT_ARGS = os.environ.get("HLA_MAFFT_ARGS", "--auto")  # env override, e.g. "--maxiterate 1000 --localpair"
+_bb = os.environ.get("HLA_BACKBONE_MIN_LEN", "330")     # env override; 'none'/'' = single MAFFT run
+BACKBONE_MIN_LEN = None if _bb.strip().lower() in ("", "none", "0") else int(_bb)
+                                    # align sequences >= this length first, then add the rest
+                                    # (None = one MAFFT run on everything; use this for uniform-
+                                    #  length partial data such as exon 2-3 only, ~180 residues)
 THREADS = -1                        # MAFFT threads, -1 = all cores
 TRAIN_IS_ALIGNED = False            # True if TRAIN_FASTA is already a gapped alignment
 REUSE_ALIGNMENT = True              # reuse OUT_DIR/training.aln.fasta if present

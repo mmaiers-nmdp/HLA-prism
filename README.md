@@ -23,26 +23,51 @@ Partial sequences may skip blocks at either end, and may start or end inside a b
 
 ## Installation
 
+This project uses [uv](https://docs.astral.sh/uv/). From the repo root:
+
 ```
-pip install numpy matplotlib rapidfuzz
+uv sync
 ```
+
+This creates `.venv/` and installs the dependencies (numpy, matplotlib, rapidfuzz)
+from `pyproject.toml`. Without uv you can still `pip install numpy matplotlib rapidfuzz`.
 
 MAFFT is needed only when the training file is unaligned.
 
 - **Linux / macOS:** `conda install -c bioconda mafft` or `sudo apt install mafft`.
 - **Windows:** bioconda has no Windows build. Download the Windows package from the MAFFT site, unzip it to a path without spaces, and set `MAFFT = r"C:\path\to\mafft-win\mafft.bat"` in the settings.
 
+## Repository layout
+
+```
+src/hla_graph.py   the tool
+data/              input FASTA files (training.fasta, test.fasta)
+results/           generated outputs (graph.json, graph.gfa, *.tsv, *.png, ...)
+pyproject.toml     uv / dependencies
+```
+
+Inputs and outputs are resolved relative to the repo root, so the defaults are
+`data/training.fasta`, `data/test.fasta` and `results/`. Override with the
+`HLA_DATA_DIR` / `HLA_RESULTS_DIR` environment variables if needed.
+
 ## Usage
 
-1. Put the training and test FASTA files next to `hla_graph.py`. IMGT headers (`>HLA:HLA00001 A*01:01:01:01 365 bp`) are read as allele names. For other headers, the first word is used.
-2. Edit the `SETTINGS` block at the top of `hla_graph.py`.
-3. Run the file, for example with Run in VS Code.
+1. Put the training and test FASTA files in `data/` as `training.fasta` and
+   `test.fasta`. IMGT headers (`>HLA:HLA00001 A*01:01:01:01 365 bp`) are read as
+   allele names. For other headers, the first word is used.
+2. Edit the `SETTINGS` block at the top of `src/hla_graph.py` if needed (`K` can
+   also be set with the `HLA_K` environment variable).
+3. Run it:
+
+```
+uv run python src/hla_graph.py
+```
 
 | Setting | Meaning |
 |---|---|
-| `TRAIN_FASTA`, `TEST_FASTA` | Input files. Set `TEST_FASTA = ""` to only build the graph. |
-| `OUT_DIR` | Output folder. |
-| `K` | Minimal number of distinct strings per block. |
+| `TRAIN_FASTA`, `TEST_FASTA` | Input files (default `data/training.fasta`, `data/test.fasta`). Set `TEST_FASTA = ""` to only build the graph. |
+| `OUT_DIR` | Output folder (default `results/`). |
+| `K` | Minimal number of distinct strings per block (env: `HLA_K`). |
 | `N_TEST` | Place only the first N test sequences (`None` = all). |
 | `MAFFT`, `MAFFT_ARGS`, `THREADS` | MAFFT executable and options. |
 | `BACKBONE_MIN_LEN` | Length threshold for the two-step alignment (`None` = a single MAFFT run). |

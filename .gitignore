@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# uv
+# keep uv.lock tracked for reproducibility
+
+# Data (inputs are user-provided / produced by the annotation repo)
+data/*
+!data/.gitkeep
+
+# Results (generated outputs)
+results/*
+!results/.gitkeep
