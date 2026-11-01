@@ -52,8 +52,8 @@ Inputs and outputs are resolved relative to the repo root, so the defaults are
 
 ## Usage
 
-1. Put the training and test FASTA files in `data/` as `training.fasta` and
-   `test.fasta`. IMGT headers (`>HLA:HLA00001 A*01:01:01:01 365 bp`) are read as
+1. Put the training and test FASTA files in `data/` as `train.fa` and
+   `test.fa`. IMGT headers (`>HLA:HLA00001 A*01:01:01:01 365 bp`) are read as
    allele names. For other headers, the first word is used.
 2. Edit the `SETTINGS` block at the top of `src/hla_graph.py` if needed (`K` can
    also be set with the `HLA_K` environment variable).
@@ -63,14 +63,43 @@ Inputs and outputs are resolved relative to the repo root, so the defaults are
 uv run python src/hla_graph.py
 ```
 
+### Environment overrides
+
+Some settings can be set on the command line without editing the source. Pass
+them as a prefix on the **same** command (no semicolon), and always go through
+`uv run` so the dependencies in `.venv/` are used:
+
+```
+# rebuild the graph with a different polymorphism threshold
+HLA_K=50 uv run python src/hla_graph.py
+
+# single MAFFT run (for uniform-length partial data, e.g. exon 2-3 only)
+HLA_BACKBONE_MIN_LEN=none uv run python src/hla_graph.py
+
+# higher-quality (slower) alignment, and a custom data/results location
+HLA_MAFFT_ARGS="--maxiterate 1000 --localpair" HLA_DATA_DIR=/path/to/data \
+  HLA_RESULTS_DIR=/path/to/out uv run python src/hla_graph.py
+```
+
+Common mistakes: `HLA_K=50; python ...` (the `;` stops the variable reaching
+the command) and plain `python ...` (the deps live in the uv `.venv`, so use
+`uv run python ...`).
+
+| Variable | Overrides |
+|---|---|
+| `HLA_K` | `K`, the minimal polymorphism per block. |
+| `HLA_BACKBONE_MIN_LEN` | `BACKBONE_MIN_LEN`; `none`/`0` means a single MAFFT run. |
+| `HLA_MAFFT_ARGS` | `MAFFT_ARGS` passed to MAFFT. |
+| `HLA_DATA_DIR`, `HLA_RESULTS_DIR` | Input / output folders. |
+
 | Setting | Meaning |
 |---|---|
-| `TRAIN_FASTA`, `TEST_FASTA` | Input files (default `data/training.fasta`, `data/test.fasta`). Set `TEST_FASTA = ""` to only build the graph. |
+| `TRAIN_FASTA`, `TEST_FASTA` | Input files (default `data/train.fa`, `data/test.fa`). Set `TEST_FASTA = ""` to only build the graph. |
 | `OUT_DIR` | Output folder (default `results/`). |
 | `K` | Minimal number of distinct strings per block (env: `HLA_K`). |
 | `N_TEST` | Place only the first N test sequences (`None` = all). |
-| `MAFFT`, `MAFFT_ARGS`, `THREADS` | MAFFT executable and options. |
-| `BACKBONE_MIN_LEN` | Length threshold for the two-step alignment (`None` = a single MAFFT run). |
+| `MAFFT`, `MAFFT_ARGS`, `THREADS` | MAFFT executable and options (`MAFFT_ARGS` env: `HLA_MAFFT_ARGS`). |
+| `BACKBONE_MIN_LEN` | Length threshold for the two-step alignment (`None` = a single MAFFT run; env: `HLA_BACKBONE_MIN_LEN`). |
 | `TRAIN_IS_ALIGNED` | Set to `True` if the training file is already a gapped alignment. |
 | `REUSE_ALIGNMENT` | Reuse `OUT_DIR/training.aln.fasta`, so MAFFT runs only once. |
 | `REUSE_GRAPH` | Reuse `OUT_DIR/graph.json` instead of rebuilding the graph. |
